@@ -39,11 +39,6 @@ def imwrite(filename, imageRGB, params=None):
         return False
 
 
-## install sliding window module
-## add async inference
-## add image grouping and thresholding code
-
-
 def inference_detector_sliding_window(model, input_img, color_mask,
                                       score_thr = 0.1, window_size = 1024, overlap_ratio = 0.5,):
 
@@ -115,7 +110,8 @@ def connect_cracks(mask_output, epsilon = 200):
     '''
     To-dos : 
     1 . Add iteration option
-    2 . Add connection option considering a direction of a crack 
+    2 . Add connection option considering a direction of a crack
+    with the direction of ellipse of each crack 
     '''
 
     # label each crack

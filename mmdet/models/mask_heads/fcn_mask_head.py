@@ -10,7 +10,6 @@ from mmdet.ops import ConvModule, build_upsample_layer
 from mmdet.ops.carafe import CARAFEPack
 from ..builder import build_loss
 from ..registry import HEADS
-from ..utils import ConvModule
 
 
 @HEADS.register_module
