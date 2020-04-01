@@ -1,0 +1,8 @@
+./tools/dist_test.sh configs/mobilenet/mask_rcnn_mobilenetv3_fpn_backbone_pretrained.py \
+    work_dirs/mask_rcnn_mobilenet_v3_coco/191222/epoch_19.pth\
+    3 --out results.pkl --eval bbox segm
+
+
+./tools/dist_train.sh project_work_dirs/express_cor/configs/cascade_mask_rcnn_x101_64x4d_fpn_carafe_1x_road_crack_200318.py 3 --autoscale-lr
+
+python tools/get_flops.py configs/mobilenet/mask_rcnn_mobilenetv3_fpn.py
