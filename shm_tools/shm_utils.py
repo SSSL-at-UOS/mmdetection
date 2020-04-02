@@ -6,7 +6,9 @@ import glob
 import numpy as np
 import slidingwindow as sw
 import pycocotools.mask as maskUtils
+import math
 
+from slidingwindow import SlidingWindow
 from mmdet.apis import init_detector, inference_detector
 from skimage.measure import label, regionprops_table
 
@@ -301,5 +303,63 @@ def cal_acc(data_list, pred_folder, classes, names):
                                                                                     names[i]))
 
 
+def sw_generate_specific_width_height(data, width_height, dimOrder, maxWindowSize, overlapPercent, transforms=[]):
+    """
+    Generates a set of sliding windows for the specified dataset.
+    """
+
+    # Determine the dimensions of the input data
+    width, height = width_height
+    lastX, lastY = data.shape[:-1]
+
+    # Generate the windows
+    return generateForSize_specific_width_height(width, height, lastX, lastY, dimOrder, maxWindowSize, overlapPercent,
+                                                 transforms)
 
 
+def generateForSize_specific_width_height(width, height, lastX, lastY, dimOrder, maxWindowSize, overlapPercent,
+                                          transforms=[]):
+    """
+    Generates a set of sliding windows for a dataset with the specified dimensions and order.
+    """
+
+
+    # If the input data is smaller than the specified window size,
+    # clip the window size to the input size on both dimensions
+    windowSizeX = min(maxWindowSize, width)
+    windowSizeY = min(maxWindowSize, height)
+
+    # Compute the window overlap and step size
+    windowOverlapX = int(math.floor(windowSizeX * overlapPercent))
+    windowOverlapY = int(math.floor(windowSizeY * overlapPercent))
+    stepSizeX = windowSizeX - windowOverlapX
+    stepSizeY = windowSizeY - windowOverlapY
+
+    # Determine how many windows we will need in order to cover the input data
+    #     lastX = width - windowSizeX
+    #     lastY = height - windowSizeY
+    xOffsets = list(range(0, lastX + 1, stepSizeX))
+    yOffsets = list(range(0, lastY + 1, stepSizeY))
+
+    # Unless the input data dimensions are exact multiples of the step size,
+    # we will need one additional row and column of windows to get 100% coverage
+    if len(xOffsets) == 0 or xOffsets[-1] != lastX:
+        xOffsets.append(lastX)
+    if len(yOffsets) == 0 or yOffsets[-1] != lastY:
+        yOffsets.append(lastY)
+
+    # Generate the list of windows
+    windows = []
+    for xOffset in xOffsets:
+        for yOffset in yOffsets:
+            for transform in [None] + transforms:
+                windows.append(SlidingWindow(
+                    x=xOffset,
+                    y=yOffset,
+                    w=windowSizeX,
+                    h=windowSizeY,
+                    dimOrder=dimOrder,
+                    transform=transform
+                ))
+
+    return windows
