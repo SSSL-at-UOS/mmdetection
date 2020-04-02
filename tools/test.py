@@ -61,6 +61,10 @@ def parse_args():
         nargs='+',
         help='evaluation metrics, which depends on the dataset, e.g., "bbox",'
         ' "segm", "proposal" for COCO, and "mAP", "recall" for PASCAL VOC')
+    parser.add_argument(
+        '--eval_save',
+        type=str,
+        help='directory used to save evaluation result in json file')
     parser.add_argument('--show', action='store_true', help='show results')
     parser.add_argument(
         '--gpu_collect',
@@ -155,7 +159,10 @@ def main():
         if args.format_only:
             dataset.format_results(outputs, **kwargs)
         if args.eval:
-            dataset.evaluate(outputs, args.eval, **kwargs)
+            eval_result = dataset.evaluate(outputs, args.eval, **kwargs)
+            print('\nwriting evaluation results to {}'.format(args.eval_save))
+            mmcv.dump(eval_result, args.eval_save)
+
 
 
 if __name__ == '__main__':
