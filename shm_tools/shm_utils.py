@@ -126,76 +126,96 @@ def connect_cracks(mask_output, epsilon = 200):
 
     crack_region_table['is_horizontal'] = width > height
 
-    e2_list = []
-    e1_list = []
-
-    for crack_num, crack_region in enumerate(crack_region_table['label']):
-
-        min_row = crack_region_table['bbox-0'][crack_num]
-        min_col = crack_region_table['bbox-1'][crack_num]
-        max_row = crack_region_table['bbox-2'][crack_num]-1
-        max_col = crack_region_table['bbox-3'][crack_num]-1
-
-        if crack_region_table['is_horizontal'][crack_num]:
-            # max col / min col
-            col = crack_region_table['coords'][crack_num][:, 1]
-
-            e2 = crack_region_table['coords'][crack_num][np.argwhere(col == max_col), :][-1][0]
-            e1 = crack_region_table['coords'][crack_num][np.argwhere(col == min_col), :][0][0]
-
-            e2_list.append(e2)
-            e1_list.append(e1)
-
-        else:
-            # max row / min row
-            row = crack_region_table['coords'][crack_num][:, 0]
-
-            e2 = crack_region_table['coords'][crack_num][np.argwhere(row == max_row), :][-1][0]
-            e1 = crack_region_table['coords'][crack_num][np.argwhere(row == min_row), :][0][0]
-
-            e2_list.append(e2)
-            e1_list.append(e1)
-
-    crack_region_table['e2'] = e2_list
-    crack_region_table['e1'] = e1_list
-
+    connecting_directions = ['x_axis', 'y_axis']
     connect_line_img = np.zeros_like(mask_output, dtype=np.uint8)
-    n = len(crack_region_table['label'])
-    color = (1) # binary image
 
-    for i in range(n):  # scan through all of crack area
-        k_list = []
-        for k in range(n):
-            if not k == i: # compare with all the other cracks
-                distance = []
-                e_list = []
+    for connecting_direction in connecting_directions:
 
-                # compare every direction
-                # close-close / far-close / close-far / far-far
-                for e1 in ['e1', 'e2']:
-                    for e2 in ['e1', 'e2']:
-                        d = np.subtract(crack_region_table[e1][k], crack_region_table[e2][i])
-                        distance.append(np.sqrt(d[0] ** 2 + d[1] ** 2))
-                        e_list.append([e1, e2])
+        e2_list = []
+        e1_list = []
 
-                if not k_list: # when k_list is empty,
-                    k_list.append([distance, e_list, k])
+        for crack_num, crack_region in enumerate(crack_region_table['label']):
 
-                elif np.min(k_list[0][0]) > np.min(distance):
-                    k_list = []
-                    k_list.append([distance, e_list, k])
+            min_row = crack_region_table['bbox-0'][crack_num]
+            min_col = crack_region_table['bbox-1'][crack_num]
+            max_row = crack_region_table['bbox-2'][crack_num] - 1
+            max_col = crack_region_table['bbox-3'][crack_num] - 1
 
-        if k_list:
+            if crack_region_table['is_horizontal'][crack_num]:
+                # max col / min col
+                col = crack_region_table['coords'][crack_num][:, 1]
 
-            if np.min(k_list[0][0]) < epsilon:
-                dist_idx = np.argmin(k_list[0][0])
-                e1, e2 = k_list[0][1][dist_idx]
-                k_ = k_list[0][2]
+                e2 = crack_region_table['coords'][crack_num][np.argwhere(col == max_col), :][-1][0]
+                e1 = crack_region_table['coords'][crack_num][np.argwhere(col == min_col), :][0][0]
 
-                start_point = crack_region_table[e1][k_][::-1]
-                end_point = crack_region_table[e2][i][::-1]
+                if connecting_direction == 'y_axis' and e2[0] < e1[0]:
+                    e2, e1 = e1, e2
 
-                connect_line_img = cv2.line(connect_line_img, tuple(start_point), tuple(end_point), color, 8)
+                e2_list.append(e2)
+                e1_list.append(e1)
+
+            else:
+                # max row / min row
+                row = crack_region_table['coords'][crack_num][:, 0]
+
+                e2 = crack_region_table['coords'][crack_num][np.argwhere(row == max_row), :][-1][0]
+                e1 = crack_region_table['coords'][crack_num][np.argwhere(row == min_row), :][0][0]
+
+                if connecting_direction == 'x_axis' and e2[1] < e1[1]:
+                    e2, e1 = e1, e2
+
+                e2_list.append(e2)
+                e1_list.append(e1)
+
+        crack_region_table['e2'] = e2_list
+        crack_region_table['e1'] = e1_list
+
+
+        n = len(crack_region_table['label'])
+        color = (1)  # binary image
+
+
+        for num_e2, e2 in enumerate(crack_region_table['e2']):
+
+            connect_candidates_e2 = []
+            connect_candidates_e1 = []
+            distance_list = []
+
+            for num_e1, e1 in enumerate(crack_region_table['e1']):
+
+                if num_e2 != num_e1:
+                    d = np.subtract(e1, e2)
+                    distance = np.sqrt(d[0] ** 2 + d[1] ** 2)
+
+
+                    vector_1 = np.asarray(crack_region_table['e1'][num_e2] - e2, dtype=np.float64)
+                    vector_2 = np.asarray(e2 - e1, dtype=np.float64)
+
+                    unit_vector_1 = vector_1 / np.linalg.norm(vector_1)
+                    unit_vector_2 = vector_2 / np.linalg.norm(vector_2)
+                    dot_product = np.dot(unit_vector_1, unit_vector_2)
+                    angle_1 = np.arccos(dot_product)
+
+
+                    vector_1 = np.asarray(crack_region_table['e1'][num_e2] - e2, dtype=np.float64)
+                    vector_2 = np.asarray(e1 - crack_region_table['e2'][num_e1], dtype=np.float64)
+
+                    unit_vector_1 = vector_1 / np.linalg.norm(vector_1)
+                    unit_vector_2 = vector_2 / np.linalg.norm(vector_2)
+                    dot_product = np.dot(unit_vector_1, unit_vector_2)
+                    angle_2 = np.arccos(dot_product)
+
+
+                    if (distance < epsilon) and (angle_1 < 1.5 / 2) and (angle_2 < 1.5 / 2):
+                        distance_list.append(distance)
+                        connect_candidates_e2.append(tuple(e2[::-1]))
+                        connect_candidates_e1.append(tuple(e1[::-1]))
+
+            if distance_list :
+                connect_idx = np.argmin(distance_list)
+                connect_e2 = connect_candidates_e2[connect_idx]
+                connect_e1 = connect_candidates_e1[connect_idx]
+                connect_line_img = cv2.line(connect_line_img, connect_e2, connect_e1, color, 8)
 
     mask_output = mask_output + connect_line_img
     mask_output[mask_output > 1] = 1
