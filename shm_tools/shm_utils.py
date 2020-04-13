@@ -8,6 +8,8 @@ import slidingwindow as sw
 import pycocotools.mask as maskUtils
 import math
 
+
+from tqdm import tqdm
 from slidingwindow import SlidingWindow
 from mmdet.apis import init_detector, inference_detector
 from skimage.measure import label, regionprops_table
@@ -44,6 +46,7 @@ def imwrite(filename, imageRGB, params=None):
 def inference_detector_sliding_window(model, input_img, color_mask,
                                       score_thr = 0.1, window_size = 1024, overlap_ratio = 0.5,):
 
+
     '''
     :param model: is a mmdetection model object
     :param input_img : str or numpy array
@@ -71,13 +74,14 @@ def inference_detector_sliding_window(model, input_img, color_mask,
     windows = sw.generate(img, sw.DimOrder.HeightWidthChannel, window_size, overlap_ratio)
     mask_output = np.zeros((img.shape[0], img.shape[1]), dtype=np.bool)
 
-    for window in windows:
+
+    for window in tqdm(windows, ascii = True, desc = 'inference by sliding window on ' + os.path.basename(input_img)):
         # Add print option for sliding window detection
         img_subset = img[window.indices()]
         results = inference_detector(model, img_subset)
         bbox_result, segm_result = results
         mask_sum = np.zeros((img_subset.shape[0], img_subset.shape[1]), dtype=np.bool)
-        bboxes = np.vstack(bbox_result)  # bboxes
+        bboxes = np.vstack(bbox_result) # bboxes
 
         # draw segmentation masks
         if segm_result is not None:
