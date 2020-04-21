@@ -3,6 +3,6 @@
     3 --out results.pkl --eval bbox segm
 
 
-./tools/dist_train.sh configs/cascade_mask_rcnn_x101_64x4d_fpn_1x_for_effl_20200131.py 3 --
+./tools/dist_train.sh project_work_dirs/express_cor/configs/cascade_mask_rcnn_x101_32x4d_dcn_fpn_carafe_1x_tunnel_crack_200416.py 3 --
 
 python tools/get_flops.py configs/mobilenet/mask_rcnn_mobilenetv3_fpn.py
