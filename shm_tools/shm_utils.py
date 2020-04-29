@@ -215,6 +215,11 @@ def connect_cracks(mask_output, epsilon = 200):
                         connect_candidates_e2.append(tuple(e2[::-1]))
                         connect_candidates_e1.append(tuple(e1[::-1]))
 
+                    if (distance < epsilon/3):
+                        distance_list.append(distance)
+                        connect_candidates_e2.append(tuple(e2[::-1]))
+                        connect_candidates_e1.append(tuple(e1[::-1]))
+
             if distance_list :
                 connect_idx = np.argmin(distance_list)
                 connect_e2 = connect_candidates_e2[connect_idx]
