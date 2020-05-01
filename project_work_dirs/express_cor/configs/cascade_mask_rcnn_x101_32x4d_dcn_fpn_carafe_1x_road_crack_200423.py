@@ -2,16 +2,19 @@
 model = dict(
     type='CascadeRCNN',
     num_stages=3,
-    pretrained='open-mmlab://resnext101_64x4d',
+    pretrained='open-mmlab://resnext101_32x4d',
     backbone=dict(
         type='ResNeXt',
         depth=101,
-        groups=64,
+        groups=32,
         base_width=4,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
-        style='pytorch'),
+        norm_cfg=dict(type='BN', requires_grad=True),
+        style='pytorch',
+        dcn=dict(type='DCN', deformable_groups=1, fallback_on_stride=False),
+        stage_with_dcn=(False, True, True, True)),
     neck=dict(
         type='FPN_CARAFE',
         in_channels=[256, 512, 1024, 2048],
@@ -19,16 +22,7 @@ model = dict(
         num_outs=5,
         start_level=0,
         end_level=-1,
-        norm_cfg=None,
-        activation=None,
-        order=('conv', 'norm', 'act'),
-        upsample='carafe',
-        upsample_cfg=dict(
-            up_kernel=5,
-            up_group=1,
-            encoder_kernel=3,
-            encoder_dilation=1,
-            compressed_channels=64)),
+        order=('conv', 'norm', 'act')),
     rpn_head=dict(
         type='RPNHead',
         in_channels=256,
@@ -94,17 +88,12 @@ model = dict(
         featmap_strides=[4, 8, 16, 32]),
     mask_head=dict(
         type='FCNMaskHead',
+        upsample_ratio=2,
+        upsample_method='deconv',
         num_convs=4,
         in_channels=256,
         conv_out_channels=256,
         num_classes=2,
-        upsample_method='carafe',
-        upsample_cfg=dict(
-            up_kernel=5,
-            up_group=1,
-            encoder_kernel=3,
-            encoder_dilation=1,
-            compressed_channels=64),
         loss_mask=dict(
             type='CrossEntropyLoss', use_mask=True, loss_weight=1.0)))
 # model training and testing settings
@@ -198,8 +187,8 @@ test_cfg = dict(
         mask_thr_binary=0.5),
     keep_all_stages=False)
 # dataset settings
-dataset_type = 'ConcreteEffl'
-data_root = 'data/train/'
+dataset_type = 'ConcreteCrack'
+data_root = 'data/training_set_200423/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -232,18 +221,18 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'instances_concrete_damage_train2018.json',
-        img_prefix=data_root ,
+        ann_file=data_root + 'annotations/instances_train2018.json',
+        img_prefix=data_root + 'train',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'instances_concrete_damage_train2018.json',
-        img_prefix=data_root ,
+        ann_file=data_root + 'annotations/instances_train2018.json',
+        img_prefix=data_root + 'train',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'instances_concrete_damage_train2018.json',
-        img_prefix=data_root ,
+        ann_file=data_root + 'annotations/instances_train2018.json',
+        img_prefix=data_root + 'train',
         pipeline=test_pipeline))
 # optimizer
 optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
@@ -265,10 +254,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 36
+total_epochs = 30
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = './work_dirs/cascade_mask_rcnn_x101_64x4d_fpn_1x_for_effl_tunnel_200222'
+work_dir = './project_work_dirs/express_cor/work_dirs/cascade_mask_rcnn_x101_32x4d_dcn_fpn_carafe_1x_road_crack_200423'
 load_from = None
-resume_from = './work_dirs/cascade_mask_rcnn_x101_64x4d_fpn_1x_for_effl_tunnel_200222/epoch_12.pth'
+resume_from = None
 workflow = [('train', 1)]
